@@ -103,7 +103,7 @@ kms key and policy
      Read and Write access to code and repository hooks
 4. Click generate and copy the token, then open /modules/secrets_manager/webhookpat and paste it
 
-* Setup a fine-grained token for authentication to X github repo by Jenkins when downloading plugins file
+* Setup a fine-grained token for authentication to X github repo by Jenkins when downloading plugins.txt or jenkins.yaml file
 
 1. Follow step 1 above 
 2. Choose "only selected repositories" under  repository access and select the X repo.
@@ -138,7 +138,7 @@ Follow these steps to realise the project
 9. Access this webapp running on the pods in the cluster by using the application load balancer created 
    by the AWS load balancer controller. You can get DNS name for the load balancer by running:
    *kubectl get ingress webapp-ingress* on **k8sBootstrapHost**. After that type:
-   {ALB-DNS-NAME}/my-webapp 
+   {ALB-DNS-NAME}/my-webapp/ 
    in the browser to access it. Entering {ALB-DNS-NAME} displays the tomcat server hosting the web app.
 
 10. Clean up by first running "*eksctl delete cluster --name my-eks-cluster --region {AWS-REGION}*. The 
