@@ -55,7 +55,7 @@ managedNodeGroups:
     volumeSize: 20
 	
 #verify by
-kubectl get nodes
+#kubectl get nodes
 #kubectl cluster-info
 #kubectl config view
 EOF
