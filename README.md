@@ -120,7 +120,7 @@ kms key and policy
 Follow these steps to realise the project
 1. Apply the terraform configuration.
 2. Connect to the **ansible-host** via SSM and login to dockerhub as **root user**.
-3. Connect to the **k8sBootStrapHost** via SSM. Replace the vpc and subnet IDs in the deployment.yml file
+3. Connect to the **k8sBootStrapHost** via SSM. Replace the vpc and subnet IDs in the cluster.yml file
    in /opt on the k8sBootstrapHost with the correct values. 
    Create a cluster with the command:
    
@@ -183,7 +183,15 @@ ingressclass.yml
 
 ingress.yml
 
-The k8s_bootstrapSetup.sh in the launch-template module has some of the files and cluster.yml and deployment.yml which are there will need updates. Whereas this repo has the rest.
+The k8s_bootstrapSetup.sh in the launch-template module has some of the files and cluster.yml which is there will need updates. Whereas this repo has the rest.
+
+In cluster.yml delete line 45 - 55. Add:
+
+*autoModeConfig:*
+    *enabled: true*
+    *nodePools: []*
+
+where those lines where deleted.
 
 Create IAM role for worker nodes to have the following permissions:
 
