@@ -187,9 +187,11 @@ The k8s_bootstrapSetup.sh in the launch-template module has some of the files an
 
 In cluster.yml delete line 45 - 55. Add:
 
-*autoModeConfig:*
-    *enabled: true*
-    *nodePools: []*
+ ```bash
+autoModeConfig:
+    enabled: true
+    nodePools: []
+```
 
 where those lines where deleted.
 
