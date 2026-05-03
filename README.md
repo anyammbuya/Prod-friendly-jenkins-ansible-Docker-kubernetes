@@ -119,7 +119,7 @@ kms key and policy
 
 Follow these steps to realise the project
 1. Apply the terraform configuration.
-2. Connect to the **ansible-host** via SSM and login to dockerhub as **root user** by typing ```bash docker login```.
+2. Connect to the **ansible-host** via SSM and login to dockerhub as **root user** by typing ```bash\ docker login```.
 3. Connect to the **k8sBootStrapHost** via SSM. Replace the vpc and subnet IDs in the cluster.yml file
    in /opt on the k8sBootstrapHost with the correct values. 
    Create a cluster with the command:
