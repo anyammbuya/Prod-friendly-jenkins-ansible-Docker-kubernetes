@@ -119,14 +119,14 @@ kms key and policy
 
 Follow these steps to realise the project
 1. Apply the terraform configuration.
-2. Connect to the **ansible-host** via SSM and login to dockerhub as **root user** by typing ```docker login```.
+2. Connect to the **ansible-host** via SSM and login to dockerhub as **root user** by typing ```bash docker login```.
 3. Connect to the **k8sBootStrapHost** via SSM. Replace the vpc and subnet IDs in the cluster.yml file
    in /opt on the k8sBootstrapHost with the correct values. 
    Create a cluster with the command:
    
    *eksctl create cluster -f /opt/cluster.yml*
    
-   Wait until you see "all EKS cluster resources for "my-eks-cluster" have been created". Then on the security group of nodes you MUST allow all traffic from the security group of the **k8sBootstrapHost**. This is necessary for kubectl commands to work. Login to the AWS console to do that.
+   Wait until you see "all EKS cluster resources for "my-eks-cluster" have been created". Then on the security group of nodes (i.e. eks-cluster-sg-my-eks-cluster-) you MUST allow all traffic from the security group of the **k8sBootstrapHost**. This is necessary for kubectl commands to work. Login to the AWS console to do that.
 4. Edit a comment in the jenkins.yml and commit the change. This will create the seed job in Jenkins.
 5. Paste the Load balancer DNS name in the browse. Obtain the Jenkins password from secrets manager and 
    paste it in the password field. Username is admin. Ensure not to install any plugins because by this time plugins from the plugins.txt file have been installed. 
