@@ -53,7 +53,11 @@ managedNodeGroups:
     maxSize: 3
     desiredCapacity: 2
     volumeSize: 20
-
+	
+#verify by
+kubectl get nodes
+#kubectl cluster-info
+#kubectl config view
 EOF
     
 echo "====Create a kubernetes Deployment==="
