@@ -236,7 +236,8 @@ These manifest files listed below are needed on the k8sBootStrapHost.
 
 The k8s_bootstrapSetup.sh in the launch-template module has some of the files in the /opt directory. cluster.yml should be modified to suite the one in this repository. Do not modify vpc and subnet IDs. deployment.yml should be replaced completely with the one in this repository. 
 
-It is better to do your modifications after running ```bash terraform apply -auto-approve ```
+It is better to do your modifications after running ```terraform apply -auto-approve ```
+
 Don't forget to add execution permissions to the bash files listed above.
 
 During the creation of the cluster ensure that the k8s bootstrap host can access resource of the cluster by creating an ingress rule in the security group of Control Plane master nodes (i.e. eks-cluster-sg-my-eks-cluster-) to accept traffic from the security group of the k8sBootStrapHost. You can allow all traffic from the k8s bootstrap host. It is necessary for you to apply your manifest files and check status.
