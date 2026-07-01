@@ -1,8 +1,23 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<!DOCTYPE html>
 <html>
-<head><title>Welcome</title></head>
+<head>
+    <title>Welcome</title>
+</head>
 <body>
-<h2>Welcome!</h2>
-<p>You are successfully logged in.</p>
+
+<%
+    String name = (String) request.getAttribute("name");
+    if (name == null) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+%>
+
+<h2>Welcome to Project Zeus, <%= name %></h2>
+
+<br/>
+
+<a href="login.jsp">Logout</a>
+
 </body>
 </html>

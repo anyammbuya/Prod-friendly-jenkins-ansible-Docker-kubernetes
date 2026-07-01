@@ -12,7 +12,7 @@ locals {
 }
 
 #---------------------------------------------------
-# Autoscaling Group Resource for jenkins/k8s
+# Autoscaling Group Resource for jenkins and k8s
 #----------------------------------------------------
 
 resource "aws_autoscaling_group" "project_zeus_asg" {
@@ -23,6 +23,15 @@ resource "aws_autoscaling_group" "project_zeus_asg" {
   desired_capacity   = 0
   max_size           = 0
   min_size           = 0
+
+  lifecycle {
+    ignore_changes = [
+      min_size,
+      max_size,
+      desired_capacity,
+    ]
+  }
+
   vpc_zone_identifier  = var.subnet_ids
   
   health_check_type = "ELB"
@@ -57,7 +66,7 @@ resource "aws_autoscaling_group" "project_zeus_asg" {
 }
 
 #-------------------------------------------------
-# Create Autoscaling policy for jenkins/k8s
+# Create Autoscaling policy for jenkins and k8s
 #--------------------------------------------------
 
 resource "aws_autoscaling_policy" "avg_cpu_utilization" {
@@ -96,6 +105,15 @@ resource "aws_autoscaling_group" "ansible" {
   desired_capacity   = 0
   max_size           = 0
   min_size           = 0
+
+  lifecycle {
+    ignore_changes = [
+      min_size,
+      max_size,
+      desired_capacity,
+    ]
+  }
+  
   vpc_zone_identifier = [var.subnet_ids[0]]
 
   launch_template {

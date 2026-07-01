@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: webapp-deployment
+  namespace: zeus-webapp
   labels:
     app: mywebapp
 spec:
@@ -14,6 +15,7 @@ spec:
       labels:
         app: mywebapp
     spec:
+      serviceAccountName: webapp-service-account
       # CRITICAL: This links the deployment to your NodePool
       nodeSelector:
         app: mywebapp

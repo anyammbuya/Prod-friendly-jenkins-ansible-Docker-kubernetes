@@ -41,7 +41,6 @@ fi
 # Prepare Jenkins home
 # ------------------------
 rm -rf /var/lib/jenkins/*
-mkdir -p /var/lib/jenkins/init.groovy.d
 mkdir -p /var/lib/jenkins/plugins
 chown -R jenkins:jenkins /var/lib/jenkins
 chmod 755 /var/lib/jenkins
@@ -53,39 +52,9 @@ mkdir -p /usr/share/java
 wget -O /usr/share/java/jenkins.war https://updates.jenkins-ci.org/latest/jenkins.war
 chown jenkins:jenkins /usr/share/java/jenkins.war
 
+# Global Variables 
 # ------------------------
-# Retrieve admin password from Secrets Manager
-# ------------------------
-SECRET_NAME="jenkins-admin-password"
 AWS_REGION="us-west-2"
-ADMIN_PASSWORD=$(aws secretsmanager get-secret-value \
-  --secret-id "$SECRET_NAME" \
-  --region "$AWS_REGION" \
-  --query "SecretString" \
-  --output text)
-
-if [ -z "$ADMIN_PASSWORD" ]; then
-    echo "Error: Failed to retrieve ADMIN_PASSWORD from Secrets Manager"
-    exit 1
-fi
-
-# ------------------------
-# Create admin user via init.groovy.d
-# ------------------------
-cat <<EOF > /var/lib/jenkins/init.groovy.d/01-create-admin.groovy
-import jenkins.model.*
-import hudson.security.*
-
-def instance = Jenkins.get()
-def hudsonRealm = new HudsonPrivateSecurityRealm(false)
-hudsonRealm.createAccount('admin', '${ADMIN_PASSWORD}')
-instance.setSecurityRealm(hudsonRealm)
-def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
-strategy.setAllowAnonymousRead(false)
-instance.setAuthorizationStrategy(strategy)
-instance.save()
-EOF
-chown -R jenkins:jenkins /var/lib/jenkins
 
 # ------------------------
 # Install Plugin Manager and plugins
@@ -97,11 +66,11 @@ chown jenkins:jenkins /opt/jenkins-plugin-manager.jar
 mkdir -p /etc/jenkins
 GITHUB_TOKEN=$(aws secretsmanager get-secret-value \
   --secret-id github-token \
-  --region "us-west-2" \
+  --region "$AWS_REGION" \
   --query "SecretString" \
   --output text)
 
-curl -H "Authorization: Bearer $GITHUB_TOKEN" \
+curl -H "Authorization: token $GITHUB_TOKEN" \
      -L \
      "https://raw.githubusercontent.com/KingstonLtd/manage-jenkins/main/plugins.txt" \
      -o /etc/jenkins/plugins.txt
@@ -111,7 +80,6 @@ java -jar /opt/jenkins-plugin-manager.jar \
   --plugin-download-directory /var/lib/jenkins/plugins \
   --war /usr/share/java/jenkins.war \
   --clean-download-directory
-chown -R jenkins:jenkins /var/lib/jenkins
 
 # ------------------------
 # Create update-jenkins-plugins.sh script
@@ -144,7 +112,7 @@ systemctl start jenkins
 EOF
 chmod +x /etc/jenkins/update-jenkins-plugins.sh
 
-# ------------------------
+# --------------------------------------------------------------------------------------
 # Set up Jenkins SSH for GitHub private repos
 # We need the ssh key setup in order to be able to obtain web app files from a our repo
 # -----------------------------------------------------------------------
@@ -153,34 +121,33 @@ mkdir -p /var/lib/jenkins/.ssh
 chown jenkins:jenkins /var/lib/jenkins/.ssh
 chmod 700 /var/lib/jenkins/.ssh
 
-
 ssh-keyscan github.com >> /var/lib/jenkins/.ssh/known_hosts
-
-# ---------------------------------------------------------------------------
-# Ensure jenkins can use the publish-over-ssh plugin to ssh into Dockerhost
-# The ssh keypair used for ssh with the github repo is the same keypair for ssh into dockerhost
-# This block is commented out because i am using ssm
-#-------------------------------------------------------------------------------
-
-# DOCKERHOST_IP=$(aws ec2 describe-instances \
-#   --filters "Name=tag:Name,Values=dockerhost" \
-#   --query "Reservations[].Instances[].PrivateIpAddress" \
-#   --output text \
-#   --region us-west-2
-# )
-# ssh-keyscan -H $DOCKERHOST_IP >> /var/lib/jenkins/.ssh/known_hosts
 
 chown jenkins:jenkins /var/lib/jenkins/.ssh/known_hosts
 chmod 644 /var/lib/jenkins/.ssh/known_hosts
 
+#-----------------------------------------------------------------------------------------------------
+# Download the jenkins.yaml file from github so that Jenkins will read automatically when JCasC starts
+# -------------------------------------------------------------------------------------------------------
+
+# Download the latest jenkins.yml from repo
+curl -H "Authorization: token $GITHUB_TOKEN" \
+     -L \
+     "https://raw.githubusercontent.com/KingstonLtd/manage-jenkins/main/jenkins.yaml" \
+     -o /var/lib/jenkins/jenkins.yaml
+
+echo "Waiting for jenkins.yaml to download"
+until [ -f /var/lib/jenkins/jenkins.yaml ]; do sleep 2; done
+chown jenkins:jenkins /var/lib/jenkins/jenkins.yaml
+
 # ------------------------
 # Set JCasC environment variable
 # ------------------------
-echo 'CASC_JENKINS_CONFIG=/var/lib/jenkins/jenkins.yaml' >> /etc/sysconfig/jenkins
+echo 'CASC_JENKINS_CONFIG=/var/lib/jenkins/jenkins.yaml' >>  /etc/environment 
 
-# ------------------------------------------------------------------------------------
+# ------------------------
 # Ensure /tmp has enough space
-# -----------------------------------------------------------------------------------
+# ------------------------
 mount -o remount,size=2G /tmp
 grep -q '^tmpfs /tmp tmpfs' /etc/fstab || echo 'tmpfs /tmp tmpfs defaults,size=2G 0 0' | tee -a /etc/fstab
 
@@ -196,14 +163,16 @@ After=network.target
 User=jenkins
 Group=jenkins
 Environment="JENKINS_HOME=/var/lib/jenkins"
-Environment="CASC_RELOAD_TOKEN=${GITHUB_TOKEN}"
-Environment="TOMCAT_PASS=deployer"
+Environment="CASC_RELOAD_TOKEN=$GITHUB_TOKEN"
 ExecStart=/usr/bin/java -jar /usr/share/java/jenkins.war
 Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
 EOF
+#----------------------------------------------
+# create the update-jenkins-config.sh file
+#---------------------------------------------
 
 cat <<'EOF' > /etc/jenkins/update-jenkins-config.sh
 #!/bin/bash
@@ -230,7 +199,7 @@ sleep 15
 
 chown jenkins:jenkins /var/lib/jenkins/jenkins.yaml
 
-curl -X POST "${JENKINS_URL}/reload-configuration-as-code/?casc-reload-token=${TOKEN}"
+curl -X POST "$JENKINS_URL/reload-configuration-as-code/?casc-reload-token=$TOKEN"
 EOF
 
 chmod +x /etc/jenkins/update-jenkins-config.sh

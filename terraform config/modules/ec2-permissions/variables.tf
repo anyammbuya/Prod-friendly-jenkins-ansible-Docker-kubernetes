@@ -22,6 +22,15 @@ variable "ansible_policy" {
   description = "ssm access plus encryption of ssm session plus logging to s3 encrypted with kms"
 }
 
+variable "workerNode_policy"{
+description = "ssm access plus encryption of ssm session plus logging to s3 encrypted with kms"
+}
+
+variable "webappPOD_policy"{
+description = "Allow webapp Pods to access secrets manager and RDS-MySQL"
+}
+
+
   
 
 

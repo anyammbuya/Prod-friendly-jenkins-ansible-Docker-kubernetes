@@ -23,6 +23,30 @@ resource "aws_secretsmanager_secret_version" "secret" {
 }
 
 # ---------------------------------------------------------------------------------------------------
+# Create and store database admin user password
+# ---------------------------------------------------------------------------------------------------
+
+resource "random_password" "db_master_password" {
+  length           = 16
+  special          = true
+  override_special = "_!%^"
+}
+
+resource "aws_secretsmanager_secret" "db_credentials" {
+  kms_key_id              = var.kms_key_id
+  name                    = "db-admin-password"
+  description             = "DB Admin password"
+  recovery_window_in_days = 0
+
+  tags = var.tags
+}
+
+resource "aws_secretsmanager_secret_version" "dbsecret" {
+  secret_id     = aws_secretsmanager_secret.db_credentials.id
+  secret_string = random_password.db_master_password.result
+}
+
+# ---------------------------------------------------------------------------------------------------
 # Store the github Personal Access Token (PAT) for authentication to manage-jenkins github repo
 # ---------------------------------------------------------------------------------------------------
 

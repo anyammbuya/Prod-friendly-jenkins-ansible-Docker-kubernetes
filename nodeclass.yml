@@ -3,7 +3,7 @@ kind: NodeClass
 metadata:
   name: private-compute
 spec:
-  role: "kubectl-role"
+  role: "custom-node-role"
   subnetSelectorTerms:
     - tags:
         Name: "private-subnet"

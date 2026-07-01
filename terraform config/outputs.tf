@@ -20,7 +20,13 @@ output "tomcat_server_ip" {
 }
 
 */
+output "db_address" {
+  description = "access point id"
+  value       = module.rds.db_address             
+}
+/*
 output "lb_dns_name" {
   description = "DNS name of lb"
   value       = module.zeus_load_balancer.lb_dns_name
 }
+*/

@@ -16,9 +16,33 @@ curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$
 tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
 install -m 0755 /tmp/eksctl /usr/local/bin && rm /tmp/eksctl
 
+# Get VPC and subnet IDs
+
+# Get VPC by project+environment tags
+VPC_ID=$(aws ec2 describe-vpcs \
+  --filters "Name=tag:project,Values=zeus" "Name=tag:Environment,Values=dev" \
+  --query "Vpcs[0].VpcId" --output text)
+
+# Get subnets with EKS tags
+SUBNET_A_ID=$(aws ec2 describe-subnets \
+  --filters "Name=vpc-id,Values=$VPC_ID" "Name=tag:kubernetes.io/role/internal-elb,Values=1" "Name=availability-zone,Values=us-west-2a" \
+  --query "Subnets[0].SubnetId" --output text)
+
+SUBNET_B_ID=$(aws ec2 describe-subnets \
+  --filters "Name=vpc-id,Values=$VPC_ID" "Name=tag:kubernetes.io/role/internal-elb,Values=1" "Name=availability-zone,Values=us-west-2b" \
+  --query "Subnets[0].SubnetId" --output text)
+
+
 echo "====Create a default cluster deployment file===="
 
-cat <<'EOF'> /opt/cluster.yml 
+echo $SUBNET_B_ID
+
+nodeRoleARN=$(aws iam get-role \
+  --role-name custom-node-role \
+  --query "Role.Arn" \
+  --output text)
+
+cat <<EOF > /opt/cluster.yml 
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 
@@ -28,13 +52,13 @@ metadata:
   version: "1.34"
 
 vpc:
-  id: "vpc-0b38adf70c98653b5"
+  id: "${VPC_ID}"
   subnets:
     private:
       us-west-2a:
-          id: "subnet-0055709509dbcf094"
+          id: "${SUBNET_A_ID}"
       us-west-2b:
-          id: "subnet-05c17377afa58645b"
+          id: "${SUBNET_B_ID}"
   clusterEndpoints:
     publicAccess: true
     privateAccess: true
@@ -53,11 +77,9 @@ managedNodeGroups:
     maxSize: 3
     desiredCapacity: 2
     volumeSize: 20
-	
-#verify by
-#kubectl get nodes
-#kubectl cluster-info
-#kubectl config view
+    iam:
+      instanceRoleARN: ${nodeRoleARN}
+
 EOF
     
 echo "====Create a kubernetes Deployment==="
@@ -67,6 +89,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
  name: webapp-deployment
+ namespace: zeus-webapp
  labels:
    app: mywebapp
 spec:
@@ -79,6 +102,7 @@ spec:
      labels:
        app: mywebapp
    spec:
+     serviceAccountName: webapp-service-account
      containers:
      - name: mywebapp
        image: anyammbuya/mywebapp:v1
@@ -103,6 +127,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: webapp-service
+  namespace: zeus-webapp
   labels:
    app: mywebapp
 spec:
@@ -124,6 +149,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: webapp-ingress
+  namespace: zeus-webapp
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
@@ -150,7 +176,12 @@ EOF
 cat << 'EOF' > /opt/albcontroller.sh
 
 # Ensure that this script runs only when the aws-load-balancer controller is absent
+
 kubectl get deployment aws-load-balancer-controller -n kube-system >/dev/null 2>&1 && exit 0
+
+# Create the namespace webapp, you now have architecture namespace (kube-system) and application namespace (zeus-webapp)
+
+kubectl create namespace zeus-webapp
 
 # 1. Associate OIDC provider (allows pods to assume IAM roles)
 eksctl utils associate-iam-oidc-provider --cluster my-eks-cluster --approve --region us-west-2
@@ -177,12 +208,26 @@ eksctl create iamserviceaccount \
 # check service account creation
 # kubectl get sa aws-load-balancer-controller -n kube-system -o yaml
 
-# 5. Install Helm
+# 5. Create Service Account for pods with the IAM policy they can assume
+
+POD_POLICY_ARN=$(aws iam list-policies \
+  --query "Policies[?PolicyName=='webappPOD-policy'].Arn" \
+  --output text)
+
+eksctl create iamserviceaccount \
+  --cluster=my-eks-cluster \
+  --namespace=zeus-webapp \
+  --name=webapp-service-account \
+  --attach-policy-arn=${POD_POLICY_ARN} \
+  --region us-west-2 \
+  --approve
+
+# 6. Install Helm
 curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 chmod 700 get_helm.sh
 ./get_helm.sh
 
-# 6. Install the controller using Helm
+# 7. Install the controller using Helm
 helm repo add eks https://aws.github.io/eks-charts
 helm repo update eks
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \

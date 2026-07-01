@@ -23,4 +23,9 @@ output "k8ssg_id" {
   value       = aws_security_group.k8s_sg.id
 }
 
+output "rds_sg_id" {
+  description = "db instance security group"
+  value       = aws_security_group.rds_sg.id
+}
+
 

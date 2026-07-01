@@ -7,13 +7,14 @@ metadata:
   version: "1.34"
 
 vpc:
-  id: "vpc-07959dac5e0c2bc8b"
+  id: "${vpc-ID}"
   subnets:
     private:
       us-west-2a:
-          id: "subnet-07f82ffebb50b3c76"
+          id: "${subnet-ID}"
       us-west-2b:
-          id: "subnet-0fbc941c711ea1845"
+          id: "${subnet-ID}"
+  # If you want to use privateAccess: true, you should create an EKS VPC endpoint.
   clusterEndpoints:
     publicAccess: true
     privateAccess: false

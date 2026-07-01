@@ -143,3 +143,29 @@ resource "aws_security_group" "secretsmanager_endpoint_sg" {
 
   tags = var.tags
 }
+
+##################################################
+# Security Group (RDS MySQL)
+####################################################
+
+resource "aws_security_group" "rds_sg" {
+  name   = "rds-sg"
+  vpc_id = var.vpc_id
+
+  ingress {
+    description     = "Allow MySQL from Tomcat"
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
+    security_groups = [aws_security_group.jenkins_sg.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+   tags = var.tags
+}

@@ -1,4 +1,22 @@
+jenkins:
+  systemMessage: "Jenkins configured automatically via JCasC"
+  
+  #Reference a secret in AWS secrets manager using aws-secrets-manager-secret-source
+  #Use that secret string to create an Admin user. 
+  
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+       - id: "admin" 
+         password: "${jenkins-admin-password}" 
+
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
 unclassified:
+ 
   location:
     url: "http://localhost:8080/"
   # configure github webhook. Here i used the aws-secrets-manager-credentials-provider plugin

@@ -66,6 +66,7 @@
                 "iam:TagRole",
                 "iam:PassRole",
                 "iam:DetachRolePolicy",
+                "iam:DeletePolicy",
                 "iam:DeleteRole",
                 "iam:CreatePolicy",
                 "iam:GetPolicy",
@@ -100,7 +101,21 @@
            "Effect": "Allow",
            "Action": "sts:GetCallerIdentity",
            "Resource": "*"
-        }
+        },
+        {
+          "Sid": "GetVpcAndSubnetIDs",
+          "Effect": "Allow",
+          "Action": [
+            "ec2:DescribeVpcs",
+            "ec2:DescribeSubnets"
+          ],
+          "Resource": "*",
+          "Condition": {
+            "StringEquals": {
+              "ec2:Region": "us-west-2"
+            }
+          }
+       }
  
   ]
 }

@@ -71,6 +71,8 @@ pipeline {
                         --instance-ids "\$INSTANCE_ID" \
                         --document-name "AWS-RunShellScript" \
                         --comment "Run Docker build & push playbook" \
+						--output-s3-bucket-name "$S3_BUCKET" \
+                        --output-s3-key-prefix "ssmlogs" \
                         --parameters 'commands=[
                             "ansible-playbook $ANSIBLE_PLAYBOOK_PATH -i /etc/ansible/inventory_aws_ec2.yml"
                         ]' \

@@ -131,7 +131,7 @@ cat << 'EOF' > /etc/ansible/playbook.yml
           raw: sudo kubectl apply -f /opt/ingress.yml
 
         - name: Update deployment with new pods when the image gets updated in Dockerhub.
-          raw: sudo kubectl rollout restart deployment.apps/webapp-deployment
+          raw: sudo kubectl rollout restart deployment.apps/webapp-deployment -n zeus-webapp
 
       when: hostvars[inventory_hostname].tags.Name == "k8sBootstrapHost"
 EOF

@@ -43,7 +43,7 @@ resource "aws_iam_instance_profile" "jenkins" {
 }
 
 # -----------------------------------------
-# k8s IAM Role, Policy, and Instance Profile
+# k8sBootstrap IAM Role, Policy, and Instance Profile
 # -----------------------------------------
 resource "aws_iam_role" "k8s" {
   name               = "ec2role-k8s"
@@ -115,6 +115,82 @@ resource "aws_iam_instance_profile" "ansible" {
 
   depends_on = [aws_iam_role_policy_attachment.ansible_attach]
 }
+
+# -----------------------------------------
+# Kubernetes Worker Nodes IAM Role
+# -----------------------------------------
+
+resource "aws_iam_role" "workerNodeRole" {
+  name               = "custom-node-role"
+  path               = "/"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+}
+
+resource "aws_iam_policy" "workerNode" {
+  name        = "workerNode-policy"
+  description = "workerNode-policy"
+  policy      = jsonencode(var.workerNode_policy)
+  tags        = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "node_managed_policies" {
+   
+   for_each = toset([
+    "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy",
+    "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly",
+    "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+  ])
+
+  role       = aws_iam_role.workerNodeRole.name
+  policy_arn = each.value
+  
+}
+
+resource "aws_iam_role_policy_attachment" "workerNode_attach" {
+   role       = aws_iam_role.workerNodeRole.name
+   policy_arn = aws_iam_policy.workerNode.arn
+}
+
+# --------------------------------------------------------------------------
+# Kubernetes webapp Pod IAM Policy
+# --------------------------------------------------------------------------
+
+resource "aws_iam_policy" "web-app-pod-policy" {
+  name        = "webappPOD-policy"
+  description = "webappPOD-policy"
+  policy      = jsonencode(var.webappPOD_policy)
+  tags        = var.tags
+}
+/*
+#-------- Added when using autoModeConfig: enable: true--------
+#------ Creating an EKS Pod Identity ---------------------------
+
+data "aws_iam_policy_document" "pod_identity_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["pods.eks.amazonaws.com"]
+    }
+
+    actions = [
+      "sts:AssumeRole",
+      "sts:TagSession"
+    ]
+  }
+}
+
+resource "aws_iam_role" "webapp_pod_role" {
+  name               = "webapp-pod-role"
+  assume_role_policy = data.aws_iam_policy_document.pod_identity_assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "webapp_pod_policy" {
+  role       = aws_iam_role.webapp_pod_role.name
+  policy_arn = aws_iam_policy.web-app-pod-policy.arn
+}
+*/
 
 
 
