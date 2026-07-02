@@ -18,7 +18,7 @@ This project walks you through the process of constructing a DevOps CI/CD pipeli
 Note
 
 The steps outlined below are steps to create a cluster with autoModeConfig disabled. To create a cluster
-with autoModeConfig enabled, [click](#-create-a-cluster-with-autoModeConfig-enabled) where i have outlined steps and provided files that can be used to achieve that effortlessly.
+with autoModeConfig enabled, [click](#create-cluster-automode) where i have outlined steps and provided files that can be used to achieve that effortlessly.
 
 The DevOps pipeline is realised by using:
 
@@ -202,7 +202,7 @@ cat /var/log/cloud-init-output.log
 Jenkins UI
 
 ### Application installation and running logs
-zeus-ec2ssm-logsbu
+S3 bucket: zeus-ec2ssm-logsbu
 ```bash
 kubectl logs deployment/webapp-deployment -n zeus-webapp --tail=100
 ```
@@ -218,7 +218,7 @@ kubectl logs deployment/webapp-deployment -n zeus-webapp --tail=100
 - **IAM Database Authentication** used by pod to access RDS-MySQL
 - **IRSA (IAM Roles for Service Accounts)** for pods and load balancer controller.
 
-## Create a cluster with autoModeConfig enabled
+## Create a cluster with autoModeConfig enabled <a id="create-cluster-automode"></a>
 
 Go to the ec2-permissions module and uncomment the section which begins with "Added when using autoModeConfig"
 
@@ -242,7 +242,7 @@ Don't forget to add execution permissions to the bash files listed above.
 
 During the creation of the cluster ensure that the k8s bootstrap host can access resource of the cluster by creating an ingress rule in the security group of Control Plane master nodes (i.e. eks-cluster-sg-my-eks-cluster-) to accept traffic from the security group of the k8sBootStrapHost. You can allow all traffic from the k8s bootstrap host. It is necessary for you to apply your manifest files and check status.
 
-Create a security group for the nodepool and give it the tag below as in the nodeclass.yml file:
+Manually Create a security group for the nodepool and give it the tag below as in the nodeclass.yml file:
 
 Name: eks-cluster-sg
 
