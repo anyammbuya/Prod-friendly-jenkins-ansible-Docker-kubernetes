@@ -14,18 +14,23 @@ output "natsg_id" {
 }
 
 output "endptsg_id" {
-  description = "Jenkins instance security group"
+  description = "Jenkins instance security group id"
   value       = aws_security_group.secretsmanager_endpoint_sg.id
 }
 
 output "k8ssg_id" {
-  description = "k8s security group"
+  description = "k8s security group id"
   value       = aws_security_group.k8s_sg.id
 }
 
 output "rds_sg_id" {
-  description = "db instance security group"
+  description = "db instance security group id"
   value       = aws_security_group.rds_sg.id
+}
+
+output "valkey_cluster_sg_id" {
+  description = "valkey cluster security group id"
+  value       = aws_security_group.zeus_valkey_sg.id
 }
 
 

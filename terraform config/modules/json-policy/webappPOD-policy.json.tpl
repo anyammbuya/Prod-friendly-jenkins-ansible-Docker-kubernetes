@@ -7,8 +7,9 @@
              "Effect": "Allow",
              "Action": "rds-db:connect",
              "Resource": [
-               "arn:aws:rds-db:${region}:${account_id}:dbuser:${db_resource_id}/admin",
-               "arn:aws:rds-db:${region}:${account_id}:dbuser:${db_resource_id}/app_user"
+               "arn:aws:rds-db:${region}:${account_id}:dbuser:${primary_db_resource_id}/admin",
+               "arn:aws:rds-db:${region}:${account_id}:dbuser:${primary_db_resource_id}/app_user",
+                "arn:aws:rds-db:${region}:${account_id}:dbuser:${replica_db_resource_id}/app_user"
              ]
         },
         {

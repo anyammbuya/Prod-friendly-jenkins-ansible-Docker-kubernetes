@@ -1,6 +1,6 @@
 # A production-friendly DevOps Project
 
-This project walks you through the process of constructing a DevOps CI/CD pipeline that can serve a production workload. It follows a microservice architecture where a JAVA web application is packaged as a Docker image with an embedded Tomcat server. This containerized image is deployed and managed as pods in a kubernetes cluster. The containerized App interacts with an RDS-MySQL database making the application dynamic. IaC (with Terraform) and a lot of automation is used rendering the project truly reproducable. 
+This project walks you through the process of constructing a DevOps CI/CD pipeline that can serve a production workload. It follows a microservice architecture where a JAVA web application is packaged as a Docker image with an embedded Tomcat server. This containerized image is deployed and managed as pods in a kubernetes cluster. Static components of the Application in a Git repo are synced to an S3 bucket thus, allowing the server to deliver mostly dynamic content. The containerized App interacts with an RDS-MySQL database making the application truly dynamic. IaC (with Terraform) and a lot of automation is used rendering the project truly reproducable. 
 
 ## Summary of What this Project Achieved 
 
@@ -70,7 +70,7 @@ The workflow is illustrated in the diagram below.
 ## Steps to reproduce this project
 
 ### Prereqisites
-* Create two **private** github repos Y and X. Y has the web application and the X is for managing the jekins server. The repo X contains jenkins.yml, plugins.txt and .github. The repo Y contains pom.xml, Jenkinsfile, src/main, jenkins/job.
+* Create three **private** github repos Y, X and Z. Y has the web application, X is for managing the jekins server and Z the static components repo. The repo X contains jenkins.yml, plugins.txt and .github. The repo Y contains pom.xml, Jenkinsfile, src/main, jenkins/job.
 
 * Setup a github webhook for the Y repo thus:
 
@@ -115,9 +115,7 @@ Follow these steps to realise the project
 1. Apply the terraform configuration.
 2. Connect to the **ansible-host** via SSM and login to dockerhub as **root user** by typing
    ``` docker login```.
-3. Connect to the **k8sBootStrapHost** via SSM. Replace the vpc and subnet IDs in the cluster.yml file
-   in /opt on the k8sBootstrapHost with the correct values. 
-   Create a cluster with the command:
+3. Connect to the **k8sBootStrapHost** via SSM. Create a cluster with the command:
    
    *eksctl create cluster -f /opt/cluster.yml*
    
@@ -131,12 +129,13 @@ Follow these steps to realise the project
 7. Perform the first statement in step 5 again. See that the webapp-pipline job is created in Jenkins.
 8. Carryout another commit again. That's it. The Jenkinsfile will execute, building and 
    deploying the web app on kubernetes. 
-9. Access this webapp running on the pods in the cluster by using the application load balancer created 
+9. Do a git push to the Z repo to get the static assets into s3.
+10. Access this webapp running on the pods in the cluster by using the application load balancer created 
    by the AWS load balancer controller. You can get DNS name for the load balancer by running:
    *kubectl get ingress webapp-ingress -n zeus-webapp* on **k8sBootstrapHost**. After that type:
    {ALB-DNS-NAME}/my-webapp/ 
    in the browser to access it. Entering {ALB-DNS-NAME} displays the tomcat server hosting the web app.
-10. Clean up by first deleting the updates you made to RDS-MySQL security group. Then run 
+11. Clean up by first deleting the updates you made to RDS-MySQL security group. Then run 
     *eksctl delete cluster --name my-eks-cluster --region {AWS-REGION}*. Wait till completion then 
     destroy the infrastructure with terraform destroy.
 
@@ -196,8 +195,9 @@ kubectl get ingress -n zeus-webapp
 ## View Logs
 
 ### Server installation logs 
+```bash
 cat /var/log/cloud-init-output.log
-
+```
 ### Build logs
 Jenkins UI
 
@@ -205,6 +205,13 @@ Jenkins UI
 S3 bucket: zeus-ec2ssm-logsbu
 ```bash
 kubectl logs deployment/webapp-deployment -n zeus-webapp --tail=100
+```
+
+### Logs on a running pod
+This command can equally show you if the right endpoints are actually being hit based on the scenario. Check to see (READER) or (WRITER) associated with: IAM database authentication successful for user: app_user
+
+```bash
+kubectl logs -f <your-webapp-pod-name> -n zeus-webapp
 ```
 ## Security Considerations
 

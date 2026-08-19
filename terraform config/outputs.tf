@@ -20,13 +20,23 @@ output "tomcat_server_ip" {
 }
 
 */
-output "db_address" {
+
+output "valkey_serverless_endpoint" {
   description = "access point id"
-  value       = module.rds.db_address             
+  value       = module.valkey.valkey_serverless_endpoint             
 }
-/*
+
+output "primary_db_address" {
+  description = "access point id"
+  value       = module.rds.primary_db_address             
+}
+
+output "replica_db_address" {
+  description = "access point id"
+  value       = module.rds.replica_db_address             
+}
+
 output "lb_dns_name" {
   description = "DNS name of lb"
   value       = module.zeus_load_balancer.lb_dns_name
 }
-*/

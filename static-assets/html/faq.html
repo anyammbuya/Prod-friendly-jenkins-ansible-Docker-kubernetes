@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Project Zeus | FAQ</title>
+    
+    <!-- Pulling CSS from S3 via relative paths since they sit in the same bucket -->
+    <link rel="stylesheet" href="/css/global.css">
+</head>
+<body>
+
+    <h2>Frequently Asked Questions</h2>
+    <p>Click on a question to reveal the system help answer.</p>
+    <hr>
+
+    <div class="faq-box">
+        <div class="faq-question">💡 How will I clear my multi-node session state?</div>
+        <div class="faq-answer">Simply click the red "Logout" button on your main dashboard. This instructs the controller to instantly purge your session key across the distributed Redis memory layer.</div>
+    </div>
+
+    <div class="faq-box">
+        <div class="faq-question">🔒 Is my connection to the infrastructure secure?</div>
+        <div class="faq-answer">Yes! All node authentications utilize decentralized session validation hashes, isolated from the local file system.</div>
+    </div>
+
+    <br>
+    <a href="http://zeus-jenkins-alb-1629533541.us-west-2.elb.amazonaws.com/tomcat/my-webapp/welcome.jsp" style="text-decoration: none; color: #007bff;">← Back to Application Dashboard</a>
+
+    <!-- Pulling JavaScript from S3 -->
+    <script src="/js/main.js"></script>
+</body>
+</html>

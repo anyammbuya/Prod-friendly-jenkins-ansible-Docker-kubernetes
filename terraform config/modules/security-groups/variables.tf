@@ -9,3 +9,7 @@ variable "tags" {
 variable "cidr_blocks" {
   description = "private subnet cidr_blocks"
 }
+
+variable "cidr_vpc" {
+  description = "vpc cidr"
+}

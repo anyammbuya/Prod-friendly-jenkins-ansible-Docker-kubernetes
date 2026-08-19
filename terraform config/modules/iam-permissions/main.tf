@@ -193,9 +193,3 @@ resource "aws_iam_role_policy_attachment" "webapp_pod_policy" {
 */
 
 
-
-
-
-
-
-

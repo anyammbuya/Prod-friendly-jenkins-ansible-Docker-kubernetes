@@ -10,9 +10,9 @@ locals {
   rendered_policy = templatefile("${path.module}/modules/json-policy/kms-access-policy.json.tpl", {
     account_id     = data.aws_caller_identity.current.account_id
     region         = var.aws_region
-    jenkinsiamrole = module.ec2_permissions.ec2iamrole_jenkins
-    k8siamrole     = module.ec2_permissions.ec2iamrole_k8s
-    ansibleiamrole = module.ec2_permissions.ec2iamrole_ansible
+    jenkinsiamrole = module.iam_permissions.ec2iamrole_jenkins
+    k8siamrole     = module.iam_permissions.ec2iamrole_k8s
+    ansibleiamrole = module.iam_permissions.ec2iamrole_ansible
 
   })
   kms_policy = jsondecode(local.rendered_policy)
@@ -59,10 +59,12 @@ locals {
 
 locals {
   rendered_POD_policy = templatefile("${path.module}/modules/json-policy/webappPOD-policy.json.tpl", {
-    account_id         = data.aws_caller_identity.current.account_id
-    region             = var.aws_region
-    db_admin_secretARN = module.zeus_secrets_manager.db_admin_secret_arn
-    db_resource_id      = module.rds.db_resource_id
+    account_id                  = data.aws_caller_identity.current.account_id
+    region                      = var.aws_region
+    db_admin_secretARN          = module.zeus_secrets_manager.db_admin_secret_arn
+    primary_db_resource_id      = module.rds.primary_db_resource_id
+    replica_db_resource_id      = module.rds.replica_db_resource_id
+
   })
   webappPOD_policy = jsondecode(local.rendered_POD_policy)
 }
@@ -140,6 +142,7 @@ module "security_groups" {
 
   vpc_id      = module.vpc.vpc_id
   cidr_blocks = module.vpc.private_subnets_cidr_blocks
+  cidr_vpc    = var.vpc_cidr_block
   tags        = var.vpc_tags
 }
 
@@ -171,7 +174,7 @@ module "zeus_secrets_manager" {
 ###################################################
 # VPC Interface Endpoints
 ###################################################
-
+/*
 module "vpc_endpoints" {
   source = "./modules/vpc_endpoints"
 
@@ -182,14 +185,15 @@ module "vpc_endpoints" {
   private_route_table_ids   =  module.vpc.private_route_table_ids
 
 }
-
+*/
 ###################################################
 # Github actions Access
 ###################################################
 
-module "githubAssmaccess" {
+module "githubActions" {
   source = "./modules/github_actions"
-
+  
+  asset_bucket_arn = module.s3_and_policy.asset_bucket_arn
   tags = var.vpc_tags
 
 }
@@ -198,8 +202,8 @@ module "githubAssmaccess" {
 # s3 logging
 ###################################################
 
-module "s3-ssmlogs" {
-  source = "./modules/s3-4ssmlogs"
+module "s3_and_policy" {
+  source = "./modules/s3"
 
   kms_key_id = module.zeus_kms.kms_key_id
   tags       = var.vpc_tags
@@ -214,7 +218,7 @@ module "ssm_preferences" {
   source = "./modules/ssm-preferences"
 
   kms_key_id  = module.zeus_kms.kms_key_id
-  bucket_name = module.s3-ssmlogs.s3_bucket_name
+  bucket_name = module.s3_and_policy.s3_bucket_name
   tags        = var.vpc_tags
 
   # Rectify issues with the existence of SSM-SessionManagerRunShell
@@ -224,7 +228,7 @@ module "ssm_preferences" {
 ##############################################
 #               ALB
 ##############################################
-/*
+
 module "zeus_load_balancer" {
   source  = "./modules/load-balancer"
  
@@ -235,13 +239,13 @@ module "zeus_load_balancer" {
   k8s_autoscaling_group_name        = module.zeus_autoscaling_group.k8s_autoscaling_group_name
   tags                              = var.vpc_tags
 }
-*/
+
 ##############################################
 #   ec2 instance profile with permission
 #############################################
 
-module "ec2_permissions" {
-  source = "./modules/ec2-permissions"
+module "iam_permissions" {
+  source = "./modules/iam-permissions"
 
   jenkins_policy    = local.jenkins_policy
   k8s_policy        = local.k8s_policy
@@ -263,7 +267,7 @@ module "zeus_launch_template" {
   source = "./modules/launch-template"
 
   security_group_ids   = [module.security_groups.jksg_id, module.security_groups.k8ssg_id]
-  instance_profile_arn = [module.ec2_permissions.ec2profileARN_jenkins, module.ec2_permissions.ec2profileARN_k8s, module.ec2_permissions.ec2profileARN_ansible]
+  instance_profile_arn = [module.iam_permissions.ec2profileARN_jenkins, module.iam_permissions.ec2profileARN_k8s, module.iam_permissions.ec2profileARN_ansible]
   tags                 = var.vpc_tags
 
   depends_on = [
@@ -298,7 +302,7 @@ module "nat" {
   subnet_id_private       = module.vpc.private_subnets[0]
   private_route_table_ids = module.vpc.private_route_table_ids
   cidr_blocks_private     = module.vpc.private_subnets_cidr_blocks
-  #nat_ec2profile           = module.ec2_permissions.nat_ec2profile
+  #nat_ec2profile           = module.iam_permissions.nat_ec2profile
   vpc_id = module.vpc.vpc_id
 }
 
@@ -311,7 +315,30 @@ module "rds" {
 
   db_admin_secret_string = module.zeus_secrets_manager.db_admin_secret_string
   rds_sg_id              = module.security_groups.rds_sg_id 
-  subnet_id_private      = slice(module.vpc.private_subnets, 2, 4)
+  subnet_ids_private     = slice(module.vpc.private_subnets, 2, 4)
   tags                   = var.vpc_tags
 }
 
+#################################################
+#                   valkey Cache
+#################################################
+
+module "valkey" {
+  source = "./modules/valkey"
+  subnet_ids_private     = slice(module.vpc.private_subnets, 0, 2)
+  valkey_sg_id            = module.security_groups.valkey_cluster_sg_id
+  tags                   = var.vpc_tags
+
+}
+
+###################################################
+#                CloudTrail
+##################################################
+
+module "zeus_cloudtrail" {
+  source = "./modules/cloudtrail"
+
+  bucket_name  = module.s3_and_policy.s3_bucket_name
+  tags         = var.vpc_tags
+
+}

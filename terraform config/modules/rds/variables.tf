@@ -6,7 +6,7 @@ variable "db_admin_secret_string" {
   description = "secret string of db admin"
 }
 
-variable "subnet_id_private" {
+variable "subnet_ids_private" {
   description = "private subnet Ids"
 }
 

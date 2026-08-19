@@ -1,0 +1,23 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+    margin: 40px;
+    color: #333;
+}
+.faq-box {
+    background: white;
+    padding: 20px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.faq-question {
+    font-weight: bold;
+    color: #007bff;
+    cursor: pointer;
+}
+.faq-answer {
+    margin-top: 10px;
+    display: none; /* Controlled via JS */
+    color: #555;
+}
